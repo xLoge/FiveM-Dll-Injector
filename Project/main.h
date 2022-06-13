@@ -3,11 +3,11 @@
 #include <iostream>
 #include <TlHelp32.h>
 
-DWORD procId = 0;
+DWORD procId;
 
 DWORD GetProcId(const char* procName)
 {
-	DWORD procId = 0;
+	DWORD lProcId = 0;
 	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
 	if (hSnap != INVALID_HANDLE_VALUE)
@@ -21,30 +21,33 @@ DWORD GetProcId(const char* procName)
 			{
 				if (!_stricmp(procEntry.szExeFile, procName))
 				{
-					procId = procEntry.th32ProcessID;
+					lProcId = procEntry.th32ProcessID;
 					break;
 				}
-			} while (Process32Next(hSnap, &procEntry));
+			}
+			while (Process32Next(hSnap, &procEntry));
 		}
 	}
 	CloseHandle(hSnap);
-	return procId;
+	return lProcId;
 }
 
 void CheckProc(const char* ProcName)
 {
-	procId = GetProcId(ProcName);
-	if (procId) return;
-	procId = 0;
+	if (GetProcId(ProcName)) 
+	{
+		procId = GetProcId(ProcName);
+		return;
+	}
 	Sleep(25);
 	return;
 }
 
-void Inject(const char* filename)
+void Inject(const char* filepath)
 {
 	bool IsWaiting = false;
 
-	while (!procId)
+	while (true)
 	{
 		CheckProc("FiveM_GameProcess.exe");
 		CheckProc("FiveM_b2060_GameProcess.exe");
@@ -58,78 +61,62 @@ void Inject(const char* filename)
 		CheckProc("FiveM_b2372_GTAProcess.exe");
 		CheckProc("FiveM_b2545_GTAProcess.exe");
 
-		if (procId) break; // Without the code will allways wait 5 Seconds
+		if (procId) break;
 
 		if (!IsWaiting)
 		{
-			std::cout << "Waiting for FiveM ...\n";
+			std::cout << "Waiting for FiveM ...";
 			IsWaiting = true;
 		}
 	}
 
-	std::cout << "Found FiveM! (" << procId << ")";
-
-		if (IsWaiting)
-		{
-			std::cout << " Waiting 5 Seconds to prevent errors\n";
-			Sleep(5000);
-		}
-		else
-			std::cout << "\n";
+	if (IsWaiting)
+	{
+		std::cout << "\nFound FiveM! (PID: " << procId << ") Waiting 5 Seconds to prevent errors";
+		Sleep(5000);
+	}
 	
-	HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, 0, procId);
+	HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, false, procId);
 
-	if (hProc && hProc != INVALID_HANDLE_VALUE)
+	if (hProc != INVALID_HANDLE_VALUE)
 	{
 		void* loc = VirtualAllocEx(hProc, 0, MAX_PATH, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 		if (loc)
-		{
-			WriteProcessMemory(hProc, loc, filename, strlen(filename) + 1, 0);
-		}
+			WriteProcessMemory(hProc, loc, filepath, strlen(filepath) + 1, 0);
 
 		HANDLE hThread = CreateRemoteThread(hProc, 0, 0, (LPTHREAD_START_ROUTINE)LoadLibraryA, loc, 0, 0);
 
 		if (hThread)
-		{
 			CloseHandle(hThread);
-		}
 	}
 
 	if (hProc)
-	{
 		CloseHandle(hProc);
-	}
 
 	return;
 }
 
-void Start()
+const char* SelectFile()
 {
-	// File Select
-
-	char file[MAX_PATH] = "";
+	char filePath[MAX_PATH];
 	OPENFILENAME ofn;
-	ZeroMemory(&file, sizeof(file));
+	ZeroMemory(&filePath, sizeof(filePath));
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = NULL;
 	ofn.lpstrFilter = "Dynamic Link Library (*.dll)\0 * .dll\0";
-	ofn.lpstrFile = file;
+	ofn.lpstrFile = filePath;
 	ofn.nMaxFile = MAX_PATH;
-	ofn.lpstrTitle = "Select DLL";
+	ofn.lpstrTitle = "Select File";
 	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
 	if (!GetOpenFileNameA(&ofn))
-	{
 		switch (CommDlgExtendedError())
 		{
-		default: return;
+			case NULL:
+			default: return NULL;
 		}
-	}
 
-	// Inject
-
-	Inject(file);
-	
-	return;
+	std::cout << "File: \"" << filePath << "\"\n\n";
+	return filePath;
 }
