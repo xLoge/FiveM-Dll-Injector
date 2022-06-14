@@ -1,12 +1,15 @@
 #pragma once
 
-void CheckProc(const char* ProcName, DWORD& procId)
+void CheckProc(const char* procName, DWORD& procId, int ms)
 {
-	if (GetProcId(ProcName))
+	if (GetProcId(procName))
 	{
-		procId = GetProcId(ProcName);
+		procId = GetProcId(procName);
 		return;
 	}
-	Sleep(50);
-	return;
+	else
+	{
+		Sleep(ms);
+		return;
+	}
 }
