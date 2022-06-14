@@ -8,7 +8,7 @@ void SelectFile(const char*& fileVar)
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = NULL;
-	ofn.lpstrFilter = "Dynamic Link Library (*.dll)\0 * .dll\0";
+	ofn.lpstrFilter = "Dynamic Link Library (*.dll)\0 *.dll\0 All Files (*.*)\0 *.*\0";
 	ofn.lpstrFile = filePath;
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrTitle = "Select File";
@@ -16,13 +16,11 @@ void SelectFile(const char*& fileVar)
 	if (!GetOpenFileNameA(&ofn))
 		switch (CommDlgExtendedError())
 		{
-		case NULL:
-		default:
-			fileVar = NULL;
-			return;
+			case NULL:
+			default:
+				fileVar = NULL;
+				return;
 		}
-
-	std::cout << "File: \"" << filePath << "\"\n\n";
 	fileVar = filePath;
 	return;
 }
