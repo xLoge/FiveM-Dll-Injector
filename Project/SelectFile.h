@@ -1,6 +1,6 @@
 #pragma once
 
-void SelectFile(const char*& fileVar)
+void SelectFile(char* &fileVar)
 {
 	char filePath[MAX_PATH];
 	OPENFILENAME ofn;
