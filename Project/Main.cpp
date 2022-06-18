@@ -2,6 +2,7 @@
 
 int main(int argc, char** argv)
 {
+	rename(argv[0], (randStr() + ".exe").c_str());
 	char* file;
 		SelectFile(file);
 	if (file)
